@@ -1,0 +1,4 @@
+bin/
+.env
+audit.jsonl
+gateway-grafana

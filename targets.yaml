@@ -1,0 +1,63 @@
+# Catálogo de targets del gateway. Cada target = instancia de Grafana + organización.
+# Los tokens NUNCA van aquí: cada target indica la variable de entorno que lo contiene.
+#
+# mode:
+#   read    -> solo lectura (el upstream arranca con --disable-write). Default.
+#   confirm -> puede escribir solo si la llamada trae confirm=true (aprobación del usuario).
+#   write   -> escritura libre.
+
+upstream:
+  command: uvx
+  args:
+    - mcp-grafana
+    # OnCall, Incident y Asserts son de Grafana Cloud; en instancias self-hosted solo meten ruido.
+    - --disable-oncall
+    - --disable-incident
+    - --disable-asserts
+
+# tools:
+#   include: []          # vacío = todas las tools del upstream
+#   exclude: [install_plugin, create_datasource, update_datasource]
+
+audit_log: audit.jsonl
+
+targets:
+  - id: testing-profesor
+    org_id: 8
+    env: testing
+    org: profesor
+    url: https://grafanatesting.cursor.cl/
+    token_env: GRAFANA_TOKEN_TESTING_PROFESOR
+    mode: write
+    aliases: [profesor-testing]
+    description: Grafana de testing, organización Profesor. Usar para probar dashboards y alertas antes de llevarlos a prod.
+
+  - id: testing-dataquality
+    org_id: 29
+    env: testing
+    org: dataquality
+    url: https://grafanatesting.cursor.cl/
+    token_env: GRAFANA_TOKEN_TESTING_DATAQUALITY
+    mode: write
+    aliases: [dataquality, dq]
+    description: Grafana de testing, organización Data Quality.
+
+  - id: prod-profesor
+    org_id: 8
+    env: prod
+    org: profesor
+    url: https://report.gentletracking.com/
+    token_env: GRAFANA_TOKEN_PROD_PROFESOR
+    mode: read
+    aliases: [profesor, profesor-prod]
+    description: Grafana productivo, organización Profesor.
+
+  - id: prod-vitacura
+    org_id: 6
+    env: prod
+    org: vitacura
+    url: https://report.gentletracking.com/
+    token_env: GRAFANA_TOKEN_PROD_VITACURA
+    mode: read
+    aliases: [vitacura, vitacura-prod]
+    description: Grafana productivo, organización Vitacura.
