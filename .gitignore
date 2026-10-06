@@ -1,4 +1,4 @@
 bin/
-.env
+config.yml
 audit.jsonl
 gateway-grafana

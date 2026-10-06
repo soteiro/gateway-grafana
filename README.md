@@ -28,22 +28,25 @@ Claude ──► gateway-grafana (1 MCP, ~66 tools)
 
 ```bash
 go build -o bin/gateway-grafana .
-cp .env.example .env        # completar los tokens
-./bin/gateway-grafana -env-file .env -check   # prueba user_info en cada target
+cp config.example.yml config.yml        # completar los tokens
+./bin/gateway-grafana -credentials config.yml -check   # prueba user_info en cada target
 ```
+
+Los tokens se cargan desde `config.yml` por defecto. Las variables ya definidas en el
+entorno tienen prioridad; usa `-credentials ""` para usar solo el entorno.
 
 Registrar en Claude Code (ámbito usuario):
 
 ```bash
 claude mcp add grafana --scope user -- \
-  $PWD/bin/gateway-grafana -config $PWD/targets.yaml -env-file $PWD/.env
+  $PWD/bin/gateway-grafana -config $PWD/targets.yaml -credentials $PWD/config.yml
 ```
 
 ## Agregar una organización
 
 1. Crear un service account en la org de Grafana y generar su token.
 2. Agregar una entrada en `targets.yaml` (`id`, `env`, `org`, `url`, `token_env`, `mode`, `description`, `aliases`).
-3. Agregar el token a `.env` y reiniciar la sesión de Claude Code.
+3. Agregar el token a `config.yml` (bajo `tokens`) y reiniciar la sesión de Claude Code.
 
 Una buena `description` (qué datasources tiene, qué clientes o sensores, para qué se usa)
 es lo que más ayuda al modelo a elegir bien el target.

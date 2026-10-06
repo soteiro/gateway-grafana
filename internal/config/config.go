@@ -2,7 +2,6 @@
 package config
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -147,30 +146,31 @@ func (c *Config) MissingTokens() []string {
 	return out
 }
 
-// LoadEnvFile carga KEY=VALUE desde un archivo tipo .env sin pisar variables
-// ya definidas en el entorno.
-func LoadEnvFile(path string) error {
-	f, err := os.Open(path)
+// LoadCredentials carga los tokens desde YAML sin pisar variables del entorno.
+func LoadCredentials(path string) error {
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
-	for n := 1; sc.Scan(); n++ {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		line = strings.TrimPrefix(line, "export ")
-		k, v, ok := strings.Cut(line, "=")
-		if !ok {
-			return fmt.Errorf("%s:%d: se esperaba KEY=VALUE", path, n)
-		}
-		k = strings.TrimSpace(k)
-		v = strings.Trim(strings.TrimSpace(v), `"'`)
-		if _, set := os.LookupEnv(k); !set {
-			os.Setenv(k, v)
+	var credentials struct {
+		Tokens map[string]string `yaml:"tokens"`
+	}
+	dec := yaml.NewDecoder(strings.NewReader(string(raw)))
+	dec.KnownFields(true)
+	if err := dec.Decode(&credentials); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	for key, value := range credentials.Tokens {
+		if key == "" || strings.ContainsAny(key, "=\x00") || strings.ContainsRune(value, '\x00') {
+			return fmt.Errorf("%s: variable de token inválida", path)
 		}
 	}
-	return sc.Err()
+	for key, value := range credentials.Tokens {
+		if _, set := os.LookupEnv(key); !set {
+			if err := os.Setenv(key, value); err != nil {
+				return fmt.Errorf("%s: no se pudo definir %s: %w", path, key, err)
+			}
+		}
+	}
+	return nil
 }

@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -58,19 +57,34 @@ targets:
 	}
 }
 
-func TestLoadEnvFile(t *testing.T) {
-	p := filepath.Join(t.TempDir(), ".env")
-	os.WriteFile(p, []byte("# comentario\nGW_TEST_A=\"uno\"\nexport GW_TEST_B=dos\n"), 0o600)
+func TestLoadCredentials(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.yml")
+	os.WriteFile(p, []byte("tokens:\n  GW_TEST_A: uno\n  GW_TEST_B: dos\n"), 0o600)
 	t.Setenv("GW_TEST_B", "existente")
 	t.Setenv("GW_TEST_A", "")
 	os.Unsetenv("GW_TEST_A")
-	if err := LoadEnvFile(p); err != nil {
+	if err := LoadCredentials(p); err != nil {
 		t.Fatal(err)
 	}
 	if got := os.Getenv("GW_TEST_A"); got != "uno" {
 		t.Errorf("GW_TEST_A = %q", got)
 	}
-	if got := os.Getenv("GW_TEST_B"); !strings.EqualFold(got, "existente") {
+	if got := os.Getenv("GW_TEST_B"); got != "existente" {
 		t.Errorf("GW_TEST_B no debe pisarse, got %q", got)
+	}
+}
+
+func TestLoadCredentialsErrors(t *testing.T) {
+	for name, content := range map[string]string{
+		"YAML inválido":     "tokens: [",
+		"campo desconocido": "token: secreto",
+		"tipo inválido":     "tokens: [uno, dos]",
+		"variable inválida": "tokens:\n  'INVALID=KEY': valor",
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := LoadCredentials(write(t, content)); err == nil {
+				t.Fatal("se esperaba error")
+			}
+		})
 	}
 }

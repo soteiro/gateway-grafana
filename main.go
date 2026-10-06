@@ -24,22 +24,22 @@ const version = "0.1.0"
 
 func main() {
 	cfgPath := flag.String("config", "targets.yaml", "ruta al catálogo de targets")
-	envFile := flag.String("env-file", "", "archivo KEY=VALUE con los tokens (opcional)")
+	credentialsFile := flag.String("credentials", "config.yml", "archivo YAML con los tokens (vacío para usar solo el entorno)")
 	check := flag.Bool("check", false, "verifica cada target (user_info) y termina")
 	flag.Parse()
 
 	// stdout es el canal MCP: todo el logging va a stderr.
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
 
-	if err := run(*cfgPath, *envFile, *check); err != nil {
+	if err := run(*cfgPath, *credentialsFile, *check); err != nil {
 		fmt.Fprintln(os.Stderr, "gateway-grafana:", err)
 		os.Exit(1)
 	}
 }
 
-func run(cfgPath, envFile string, check bool) error {
-	if envFile != "" {
-		if err := config.LoadEnvFile(envFile); err != nil {
+func run(cfgPath, credentialsFile string, check bool) error {
+	if credentialsFile != "" {
+		if err := config.LoadCredentials(credentialsFile); err != nil {
 			return err
 		}
 	}
